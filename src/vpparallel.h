@@ -25,4 +25,5 @@ private:
   std::mt19937 rng_;
   tbb::concurrent_vector<VPNode> nodes_;
   std::vector<Item> items_;
+  std::mutex node_mutex;
 };
