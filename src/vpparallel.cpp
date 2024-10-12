@@ -57,25 +57,9 @@ int VPTreeParallel::makeTree(int lower, int upper) {
 }
 
 int VPTreeParallel::makeNode(int item) {
-  std::lock_guard<std::mutex> lock(node_mutex);
-  nodes_.push_back(VPNode(item));
-  return nodes_.size() - 1;
+  auto it = nodes_.push_back(VPNode(item));
+  return static_cast<int>(std::distance(nodes_.begin(), it));
 }
-
-// int VPTreeParallel::makeNode(int item) {
-//   while (true) {
-//     int current_size = nodes_.size(); // Get the current size
-//     // Add the new node
-//     nodes_.push_back(VPNode(item));
-//     // Check if the size has changed
-//     if (nodes_.size() == current_size + 1) {
-//       return current_size; // Return the index if it matches
-//     }
-//     // If the size has changed, retry
-//     // You may want to add a small sleep or yield to avoid busy-waiting
-//     std::this_thread::yield(); // Give up the thread's time slice
-//   }
-// }
 
 void VPTreeParallel::selectRoot(int lower, int upper) {
   std::uniform_int_distribution<int> uni(lower, upper - 1);
