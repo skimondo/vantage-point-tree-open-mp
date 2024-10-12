@@ -23,6 +23,6 @@ private:
   int m_max_depth;
   const std::vector<Eigen::Vector3d>& m_points;
   std::mt19937 rng_;
-  std::vector<VPNode> nodes_;
+  tbb::concurrent_vector<VPNode> nodes_;
   std::vector<Item> items_;
 };
