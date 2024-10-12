@@ -1,6 +1,7 @@
 #include "vpparallel.h"
 
 #include <Eigen/Dense>
+#include <tbb/task_group.h>
 
 /*
  * IDENTIFICATION : indiquer le ou les codes permanents des auteurs ici.
@@ -43,8 +44,14 @@ int VPTreeParallel::makeTree(int lower, int upper) {
     auto node = makeNode(lower);
     auto& n = nodes_[node];
     n.threshold = (items_[lower].first - items_[median].first).norm();
-    n.left = makeTree(lower + 1, median);
-    n.right = makeTree(median, upper);
+    tbb::task_group g;
+    g.run([&] {
+      n.left = makeTree(lower + 1, median);
+    });
+    g.run([&] {
+      n.right = makeTree(median, upper);
+    });
+    g.wait();
     return node;
   }
 }
