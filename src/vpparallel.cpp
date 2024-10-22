@@ -21,7 +21,7 @@ void VPTreeParallel::build() {
   // déterministe
   rng_.seed(0);
   nodes_.reserve(items_.size());
-  makeTree(0, items_.size());
+  makeTree(0, items_.size(), 0, m_max_depth);
 }
 
 void VPTreeParallel::makeItems() {
@@ -32,7 +32,7 @@ void VPTreeParallel::makeItems() {
   }
 }
 
-int VPTreeParallel::makeTree(int lower, int upper) {
+int VPTreeParallel::makeTree(int lower, int upper, int depth, int max_depth) {
   if (lower >= upper) {
     return VPNode::Leaf;
   } else if (lower + 1 == upper) {
@@ -44,14 +44,20 @@ int VPTreeParallel::makeTree(int lower, int upper) {
     auto node = makeNode(lower);
     auto& n = nodes_[node];
     n.threshold = (items_[lower].first - items_[median].first).norm();
-    tbb::task_group g;
-    g.run([&] {
-      n.left = makeTree(lower + 1, median);
-    });
-    g.run([&] {
-      n.right = makeTree(median, upper);
-    });
-    g.wait();
+
+    if (depth < max_depth) {
+      tbb::task_group g;
+      g.run([&] {
+        n.left = makeTree(lower + 1, median, depth + 1, max_depth);
+      });
+      g.run([&] {
+        n.right = makeTree(median, upper, depth + 1, max_depth);
+      });
+      g.wait();
+    } else {
+      n.left = makeTree(lower + 1, median, depth + 1, max_depth);
+      n.right = makeTree(median, upper, depth + 1, max_depth);
+    }
     return node;
   }
 }
@@ -131,3 +137,9 @@ void VPTreeParallel::searchInNode(const VPNode& node,  //
     }
   }
 }
+
+void VPTreeParallel::setMaxDepth(int max_depth) {
+  m_max_depth = max_depth;
+}
+
+

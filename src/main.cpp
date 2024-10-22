@@ -47,7 +47,10 @@ int main(int argc, char** argv) {
   if (parallel == 0) {
     tree = new VPTreeSerial(points);
   } else {
-    tree = new VPTreeParallel(points);
+    // un peu hack pour set max depth, mais evite de changer la signature
+    VPTreeParallel* parallelTree = new VPTreeParallel(points);
+    parallelTree->setMaxDepth(max_depth);
+    tree = parallelTree;
   }
 
   std::cout << "construction de l'arbre... " << std::flush;
