@@ -26,4 +26,4 @@ add_executable(bench_naive bench_naive.cpp)
 target_link_libraries(bench_naive PUBLIC vptree TBB::tbb Eigen3::Eigen benchmark::benchmark)
 
 add_executable(bench_vptree bench_vptree.cpp)
-target_link_libraries(bench_vptree PUBLIC vptree TBB::tbb Eigen3::Eigen)
+target_link_libraries(bench_vptree PUBLIC vptree TBB::tbb Eigen3::Eigen benchmark::benchmark)
