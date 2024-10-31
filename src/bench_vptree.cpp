@@ -12,6 +12,7 @@
 
 static const int NODE_COUNT = 100000;
 static const int CORE_COUNT = std::thread::hardware_concurrency();
+static int MAX_DEPTH_OF_TREE = static_cast<int>(std::floor(std::log2(NODE_COUNT)));
 
 void BM_VPTreeSerialBuild(benchmark::State& state) {
 
@@ -87,7 +88,7 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 
 BENCHMARK(BM_VPTreeSerialBuild);
 BENCHMARK(BM_VPTreeParallelBuild)
-    ->DenseRange(0, CORE_COUNT);
+    ->DenseRange(0, MAX_DEPTH_OF_TREE);
 
 // Benchmark setup
 BENCHMARK(BM_VPTreeParallelWeakScaling)
