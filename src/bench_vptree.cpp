@@ -3,6 +3,7 @@
 #include <benchmark/benchmark.h>
 #include <cmath>    // for std::log2
 #include <map>      // for storing optimal max_depth
+#include <thread>
 
 #include "experiments.h"
 #include "optparser.hpp"
@@ -10,6 +11,7 @@
 #include "vpserial.cpp"
 
 static const int NODE_COUNT = 100000;
+static const int CORE_COUNT = std::thread::hardware_concurrency();
 
 void BM_VPTreeSerialBuild(benchmark::State& state) {
 
@@ -85,11 +87,11 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 
 BENCHMARK(BM_VPTreeSerialBuild);
 BENCHMARK(BM_VPTreeParallelBuild)
-    ->DenseRange(0, 25);
+    ->DenseRange(0, CORE_COUNT);
 
 // Benchmark setup
 BENCHMARK(BM_VPTreeParallelWeakScaling)
-    ->DenseRange(1, 20)
+    ->DenseRange(1, CORE_COUNT)
     ->Complexity();
 
 int main(int argc, char** argv) {
