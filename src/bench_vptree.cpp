@@ -9,24 +9,24 @@
 #include "vpparallel.h"
 #include "vpserial.cpp"
 
+static const int NODE_COUNT = 100000;
+
 void BM_VPTreeSerialBuild(benchmark::State& state) {
 
-  const int num_points = 10000000;
   std::vector<Vector3d> points;
-  experiment_basic(points, num_points);
+  experiment_basic(points, NODE_COUNT);
   for (auto _ : state) {
     VPTreeSerial* tree = new VPTreeSerial(points);
     tree->build();
     delete tree;
   }
-  state.SetComplexityN(num_points);
+  state.SetComplexityN(NODE_COUNT);
 }
 
 void BM_VPTreeParallelBuild(benchmark::State& state) {
 
-  const int num_points = 10000000;
   std::vector<Vector3d> points;
-  experiment_basic(points, num_points);
+  experiment_basic(points, NODE_COUNT);
 
   int max_depth = state.range(0);
 
@@ -36,7 +36,7 @@ void BM_VPTreeParallelBuild(benchmark::State& state) {
     tree->build();
     delete tree;
   }
-  state.SetComplexityN(num_points);
+  state.SetComplexityN(NODE_COUNT);
 }
 
 int calculateMaxDepth(int node_count, int core_count) {
@@ -52,7 +52,7 @@ int calculateMaxDepth(int node_count, int core_count) {
 void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 
   int core_count = state.range(0);
-  int node_count = 5000000 * core_count;
+  int node_count = NODE_COUNT * core_count;
   int max_depth = calculateMaxDepth(node_count, core_count);
 
   std::vector<Vector3d> points;
