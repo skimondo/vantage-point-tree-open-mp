@@ -106,12 +106,14 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 
 BENCHMARK(BM_VPTreeSerialBuild);
 BENCHMARK(BM_VPTreeParallelBuild)
-    ->DenseRange(1, MAX_DEPTH_OF_TREE);
+    ->DenseRange(1, MAX_DEPTH_OF_TREE)
+    ->Iterations(10);
 
 // Benchmark setup
 BENCHMARK(BM_VPTreeParallelWeakScaling)
     ->DenseRange(1, CORE_COUNT)
-    ->Complexity();
+    ->Complexity()
+    ->Iterations(10);
 
 int main(int argc, char** argv) {
   granularite_file.open("granularite.dat");
