@@ -1,7 +1,8 @@
 #include "vpparallel.h"
 
-#include <Eigen/Dense>
 #include <tbb/task_group.h>
+
+#include <Eigen/Dense>
 
 /*
  * Dominique Elias (ELID14019800)
@@ -45,12 +46,8 @@ int VPTreeParallel::makeTree(int lower, int upper, int depth, int max_depth) {
 
     if (depth < max_depth) {
       tbb::task_group g;
-      g.run([&] {
-        n.left = makeTree(lower + 1, median, depth + 1, max_depth);
-      });
-      g.run([&] {
-        n.right = makeTree(median, upper, depth + 1, max_depth);
-      });
+      g.run([&] { n.left = makeTree(lower + 1, median, depth + 1, max_depth); });
+      g.run([&] { n.right = makeTree(median, upper, depth + 1, max_depth); });
       g.wait();
     } else {
       n.left = makeTree(lower + 1, median, depth + 1, max_depth);
@@ -139,5 +136,3 @@ void VPTreeParallel::searchInNode(const VPNode& node,  //
 void VPTreeParallel::setMaxDepth(int max_depth) {
   m_max_depth = max_depth;
 }
-
-

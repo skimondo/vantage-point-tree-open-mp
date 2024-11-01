@@ -20,7 +20,7 @@ private:
   void searchInNode(const VPNode& node,  //
                     SearchContext& ctx) const;
 
-  int m_max_depth = std::numeric_limits<int>::max(); // default
+  int m_max_depth = std::numeric_limits<int>::max();  // default
   const std::vector<Eigen::Vector3d>& m_points;
   std::mt19937 rng_;
   tbb::concurrent_vector<VPNode> nodes_;

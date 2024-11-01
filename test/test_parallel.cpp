@@ -1,7 +1,7 @@
 #include <experiments.h>
 #include <uqam/tp.h>
-#include <vpserial.h>
 #include <vpparallel.h>
+#include <vpserial.h>
 
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
@@ -90,4 +90,3 @@ TEST_CASE("VPTreeParallelVLarge") {
     REQUIRE_THAT(exp, Catch::Matchers::Equals(act));
   }
 }
-

@@ -1,8 +1,9 @@
+#include <benchmark/benchmark.h>
+
+#include <cmath>  // for std::log2
 #include <fstream>
 #include <iostream>
-#include <benchmark/benchmark.h>
-#include <cmath>    // for std::log2
-#include <map>      // for storing optimal max_depth
+#include <map>  // for storing optimal max_depth
 #include <thread>
 
 #include "experiments.h"
@@ -19,7 +20,6 @@ std::ofstream granularite_file;
 std::ofstream weak_scale_file;
 
 void BM_VPTreeSerialBuild(benchmark::State& state) {
-
   std::vector<Vector3d> points;
   experiment_basic(points, NODE_COUNT);
   for (auto _ : state) {
@@ -31,7 +31,6 @@ void BM_VPTreeSerialBuild(benchmark::State& state) {
 }
 
 void BM_VPTreeParallelBuild(benchmark::State& state) {
-
   std::vector<Vector3d> points;
   experiment_basic(points, NODE_COUNT);
 
@@ -59,14 +58,13 @@ int calculateMaxDepth(int node_count, int core_count) {
   // Use the smallest integer `depth` where 2^depth >= core_count
   int max_depth = static_cast<int>(std::ceil(std::log2(core_count)));
   // Ensure max_depth is non-negative
-  if (max_depth < 0) max_depth = 0;
-  max_depth += 2; // to allow more task in cas of cpu stall
+  if (max_depth < 0)
+    max_depth = 0;
+  max_depth += 2;  // to allow more task in cas of cpu stall
   return max_depth;
 }
 
-
 void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
-
   int core_count = state.range(0);
   int node_count = NODE_COUNT * core_count;
   int max_depth = calculateMaxDepth(node_count, core_count);
@@ -90,12 +88,11 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
     // Add custom counters to Google Benchmark's state
     state.counters["Nodes"] = node_count;
     state.counters["Cores"] = core_count;
-    state.counters["Throughput"] = throughput; // Nodes per second
+    state.counters["Throughput"] = throughput;  // Nodes per second
     state.counters["max_depth"] = max_depth;
 
     if (weak_scale_file.is_open()) {
-      weak_scale_file << core_count << " " << node_count << " "
-                      << build_duration.count() << " " << throughput <<"\n";
+      weak_scale_file << core_count << " " << node_count << " " << build_duration.count() << " " << throughput << "\n";
     }
 
     delete tree;
@@ -105,15 +102,10 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 }
 
 BENCHMARK(BM_VPTreeSerialBuild);
-BENCHMARK(BM_VPTreeParallelBuild)
-    ->DenseRange(1, MAX_DEPTH_OF_TREE)
-    ->Iterations(10);
+BENCHMARK(BM_VPTreeParallelBuild)->DenseRange(1, MAX_DEPTH_OF_TREE)->Iterations(10);
 
 // Benchmark setup
-BENCHMARK(BM_VPTreeParallelWeakScaling)
-    ->DenseRange(1, CORE_COUNT)
-    ->Complexity()
-    ->Iterations(10);
+BENCHMARK(BM_VPTreeParallelWeakScaling)->DenseRange(1, CORE_COUNT)->Complexity()->Iterations(10);
 
 int main(int argc, char** argv) {
   granularite_file.open("granularite.dat");

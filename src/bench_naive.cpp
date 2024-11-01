@@ -1,9 +1,9 @@
 #include <benchmark/benchmark.h>
 
-#include "vpserial.cpp"
-#include "experiments.h"
-
 #include <random>
+
+#include "experiments.h"
+#include "vpserial.cpp"
 
 void BM_NaiveNearestNeighbors(benchmark::State& state) {
   std::vector<Vector3d> points;
@@ -19,10 +19,7 @@ void BM_NaiveNearestNeighbors(benchmark::State& state) {
   }
   state.SetComplexityN(state.range(0));
 }
-BENCHMARK(BM_NaiveNearestNeighbors)
-    ->RangeMultiplier(2)
-    ->Range((1 << 4), (1 << 20))
-    ->Complexity();
+BENCHMARK(BM_NaiveNearestNeighbors)->RangeMultiplier(2)->Range((1 << 4), (1 << 20))->Complexity();
 
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
