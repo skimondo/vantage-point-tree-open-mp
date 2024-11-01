@@ -13,3 +13,7 @@ module load python
 pip install pandas
 pip install matplotlib
 ```
+
+```
+awk '!seen[$1]++' granularite.dat > granularite.dat
+```
