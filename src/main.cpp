@@ -1,8 +1,6 @@
 #include <uqam/tp.h>
 
 #include <Eigen/Dense>
-#include <filesystem>
-#include <format>
 #include <iostream>
 #include <limits>
 #include <vector>

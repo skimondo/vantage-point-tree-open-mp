@@ -21,7 +21,7 @@ void VPTreeParallel::build() {
   // déterministe
   rng_.seed(0);
   nodes_.reserve(items_.size());
-  makeTree(0, items_.size(), 0, m_max_depth);
+  makeTree(0, items_.size(), 0, m_max_depth - 1);
 }
 
 void VPTreeParallel::makeItems() {

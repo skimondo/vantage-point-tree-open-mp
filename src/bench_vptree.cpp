@@ -10,9 +10,13 @@
 #include "vpparallel.h"
 #include "vpserial.cpp"
 
-static const int NODE_COUNT = 100000;
+static const int NODE_COUNT = 1000000;
 static const int CORE_COUNT = std::thread::hardware_concurrency();
 static int MAX_DEPTH_OF_TREE = static_cast<int>(std::floor(std::log2(NODE_COUNT)));
+
+// Output file for benchmark data
+std::ofstream granularite_file;
+std::ofstream weak_scale_file;
 
 void BM_VPTreeSerialBuild(benchmark::State& state) {
 
@@ -36,7 +40,16 @@ void BM_VPTreeParallelBuild(benchmark::State& state) {
   for (auto _ : state) {
     VPTreeParallel* tree = new VPTreeParallel(points);
     tree->setMaxDepth(max_depth);
+    auto start_time = std::chrono::high_resolution_clock::now();
     tree->build();
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> build_duration = end_time - start_time;
+
+    if (granularite_file.is_open()) {
+      granularite_file << max_depth << " " << build_duration.count() << "\n";
+    }
+
     delete tree;
   }
   state.SetComplexityN(NODE_COUNT);
@@ -80,6 +93,11 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
     state.counters["Throughput"] = throughput; // Nodes per second
     state.counters["max_depth"] = max_depth;
 
+    if (weak_scale_file.is_open()) {
+      weak_scale_file << core_count << " " << node_count << " "
+                      << build_duration.count() << " " << throughput <<"\n";
+    }
+
     delete tree;
   }
 
@@ -88,7 +106,7 @@ void BM_VPTreeParallelWeakScaling(benchmark::State& state) {
 
 BENCHMARK(BM_VPTreeSerialBuild);
 BENCHMARK(BM_VPTreeParallelBuild)
-    ->DenseRange(0, MAX_DEPTH_OF_TREE);
+    ->DenseRange(1, MAX_DEPTH_OF_TREE);
 
 // Benchmark setup
 BENCHMARK(BM_VPTreeParallelWeakScaling)
@@ -96,8 +114,22 @@ BENCHMARK(BM_VPTreeParallelWeakScaling)
     ->Complexity();
 
 int main(int argc, char** argv) {
+  granularite_file.open("granularite.dat");
+  if (!granularite_file.is_open()) {
+    std::cerr << "Failed to open granularite.dat for writing.\n";
+    return 1;
+  }
+  weak_scale_file.open("weak_scale.dat");
+  if (!granularite_file.is_open()) {
+    std::cerr << "Failed to open weak_scale.dat for writing.\n";
+    return 1;
+  }
+
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
+
+  granularite_file.close();
+  weak_scale_file.close();
   return 0;
 }

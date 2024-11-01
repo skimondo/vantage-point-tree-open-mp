@@ -73,3 +73,21 @@ TEST_CASE("VPTreeParallelLarge") {
   }
 }
 
+TEST_CASE("VPTreeParallelVLarge") {
+  std::vector<Vector3d> points;
+  experiment_basic(points, 10000);
+
+  VPTreeParallel tree(points);
+  NaiveNearestNeighbors naive(points);
+
+  tree.build();
+
+  for (const auto& p : points) {
+    const auto neighborsCount = 100;
+    SearchResults act = tree.search(p, neighborsCount);
+    SearchResults exp = naive.search(p, neighborsCount);
+
+    REQUIRE_THAT(exp, Catch::Matchers::Equals(act));
+  }
+}
+
