@@ -100,30 +100,22 @@ En revanche, si on fait les étapes 1 et 2, on n'obitent plus d'erreur de concur
 
 ### Benchmarks sur la grappe
 
-![graphs/average_execution_time_vs_max_depth-grappe.png](graphs/average_execution_time_vs_max_depth-grappe.png)
+![temps d'exécution en fonction de la granularité grappe](graphs/average_execution_time_vs_max_depth-grappe.png)
 
-figure 1 - temps d'exécution en fonction de la granularité
-
-
-![graphs/average_throughput_vs_core_count-grappe.png](graphs/average_throughput_vs_core_count-grappe.png)
-
-figure 2 - debit en fonction du nombre de coeur
+![debit en fonction du nombre de coeur grappe ](graphs/average_throughput_vs_core_count-grappe.png)
 
 ### Benchmarks sur mon ordinateur
 
-![graphs/average_execution_time_vs_max_depth-laptop.png](graphs/average_execution_time_vs_max_depth-laptop.png)
+![temps d'exécution en fonction de la granularité ordinateur](graphs/average_execution_time_vs_max_depth-laptop.png)
 
-figure 3 - temps d'exécution en fonction de la granularité
-
-![graphs/average_throughput_vs_core_count-laptop.png](graphs/average_throughput_vs_core_count-laptop.png)
-
-figure 4 - debit en fonction du nombre de coeur
+![debit en fonction du nombre de coeur ordinateur](graphs/average_throughput_vs_core_count-laptop.png)
 
 ## Analyse Graphe
 
 J'ai effectué plusieurs benchmarks sur la grappe, mais les graphiques obtenus contiennent un peu de "bruit". Les versions des benchmarks réalisées sur un ordinateur donnent une idée plus claire de l'analyse.
 
 ### Debit par nombre de coeur
+
 Bien que le graphe présente des fluctuations, on observe que le débit reste relativement stable autour de la moyenne. Par exemple, dans le cas de la grappe, le débit se situe toujours autour de 3,15 M avec une variation de ±0,15 M en fonction du nombre de cœurs. Le même phénomène se remarque sur le graphique de  l'ordinateur, où le débit moyen est d'environ 6 M, avec une variation de ±1 M.
 
 Un débit stable est un indicateur d’une bonne parallélisation.
@@ -134,7 +126,7 @@ On observe ici une réduction agressive du temps d'exécution dès que l'on "ouv
 
 ## Commande utilisées
 
-### Compilation 
+### Compilation
 
 ```sh
 ./build/Desktop-Release/bin/bench_vptree 
