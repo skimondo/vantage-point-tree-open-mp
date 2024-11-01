@@ -4,9 +4,7 @@
 #include <tbb/task_group.h>
 
 /*
- * IDENTIFICATION : indiquer le ou les codes permanents des auteurs ici.
- *
- *
+ * Dominique Elias (ELID14019800)
  */
 
 using namespace Eigen;
