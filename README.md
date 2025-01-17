@@ -1,122 +1,164 @@
-# INF5171-243-TP2 - Recherche de voisins à l'aide d'un arbre Vantage Point
+# Rapport
 
-La structure de données [Vantage-point](https://en.wikipedia.org/wiki/Vantage-point_tree) permet d'effectuer efficacement des recherches de similarité ou des voisins en terme d'une fonction de distance.
+Auteur:
+Dominique Elias (ELID14019800)
 
-Par exemple, pour un nuage de point, cet arbre permet de trouver efficacement les autres points les plus proches. La solution simple consiste à calculer les distances du points vers tous les autres points, et de conserver les points les plus proches dans une file à priorité, ce qui est une opération au mieux O(n). L'index Vantage-point permet de faire la recherche en temps moyen O(log n). L'avantage par rapport à d'autres index spatiaux (comme un octree ou kd-tree), est qu'il n'écessite une fonction de distance, plutôt qu'un système de coordonnées. Par exemple, avec une métrique de distance d'édition entre deux chaines, on peut se servir de l'arbre Vantage-point pour trouver des mots similaires dans un correcteur orthographique, ce qui n'est pas possible avec les autres index spatiaux.
+## Parallelisation
 
-Le but du travail est de paralléliser la construction d'un arbre Vantage-point pour des points dans l'espace 3D. Il s'agit d'un algorithme récursif, qui n'est pas parallélisable avec les patrons map ou réduction.
+### Étape 1 - concurrent_vector
 
-Le programme principal `vantagepoint` permet d'excercer la librairie. Par défaut, on génère des points dans un cube unitaire, puis on recherche les 10 points les plus proches du centre [0.5, 0.5, 0.5]. La sortie comprends la liste des points et les distances, et le fichier `points.vtk` contient le fichier des points, que vous pouvez visualiser avec [ParaView](https://www.paraview.org/) Voici un résumé des principales options.
+D'abord il faut rendre le vecteur `nodes_` `tbb::concurrent_vector` pour permettre l'ajout de noeuds en parallèle.
 
-* -p : série ou parallèle
-* -n : nombre de points à générer
-* -d : récursion maximale de création de tâche
-
-Exemple d'exécution
-
-```
-$ ./vantagepoint
-Options used:
-   --num-points 10
-   --parallel 0
-   --depth 2147483647
-construction de l'arbre... fait
-calcul des voisins... fait
-0000 000000008 0.23496024
-0001 000000004 0.25474274
-0002 000000000 0.46525063
-0003 000000001 0.47045456
-0004 000000005 0.55049038
-0005 000000006 0.56279196
-0006 000000007 0.62832007
-0007 000000003 0.63858067
-0008 000000002 0.67813442
-0009 000000009 0.68003800
-Fin normale du programme
+```cpp
+// vpparallel.h
+tbb::concurrent_vector<VPNode> nodes_;
 ```
 
-### Étape 1 : Parallélisation
+### Étape 2 - makeNode atomique
 
-Le classe série est `VPTreeSerial`. Elle contient deux méthodes principales, soit `build()` pour la construction et `search()` pour la recherche des voisins. Ici, on souhaite paralléliser la construction.
+Ensuite, il faut rendre la fonction `makeNode(int item)` atomique, car elle retourne l'index essentiel pour la construction, pour faire cela on n'utilise plus `.size()` qui peut ne pas donner le resultat attendu en parallèle, on utilise donc l'itérateur retourner par `push_back` pour obtenir l'index du noeud ajouté, ce qui rend cette fonction atomique.
 
-L'arbre est binaire. À chaque niveau, on choisi un point de référence au hasard, puis on sépare les points en deux groupes, soit les points proches et les points loins, pour créer le noeud de gauche et droite de l'arbre. Cette procédure se répète récursivement jusqu'à ce que le noeud ne contienne qu'un point.
-
-La recherche se produit à partir du noeud racine. On vérifie dans quel noeud peut se trouver les points d'intérêts. Les noeuds sont explorés vers le bas de l'arbre jusqu'à trouver le nombre de points désirés.
-
-Vous devez modifier la classe `VPTreeParallel` pour supporter la construction de l'arbre en parallèle. En particulier, la méthode `VPTreeParallel::build()` est le point d'entrée pour la construction de l'arbre. Comme la classe est entièrement distincte de `VPTreeSerial`, vous pouvez modifier tous les champs et les méthodes privées.
-
-Il est suggéré d'utiliser TBB pour l'implémentation. Vous pouvez baser votre solution sur le principe de la [parallélisation du calcul de la suite Fibonacci](https://gitlab.info.uqam.ca/inf5171/inf5171-scratchpad/-/blob/master/08-tbb-group/08-tbb-fibo.cpp), dans les exemples du cours.
-
-Ajoutez une option pour contrôler la profondeur maximale pour la création de tâche. Au-delà de cette profondeur, l'algorithme continue dans le même fil d'exécution sans créer de nouvelles tâches.
-
-Il faut éviter une condition critique sur les structures de données utilisées, mais aussi éviter l'utilisation de verrous, car cela causerait un ralentissement majeur.
-
-### Étape 2 : Tests
-
-Les tests sont fournis. Vous n'avez pas besoin d'écrire de nouveaux tests. À noter que les tests pourraient passer, même si le code est défectueux. Vous pouvez utiliser différentes techniques pour vérifier votre code:
-
-* Augmenter le nombre de points et de fil d'exécution pour s'assurer d'augmenter la probabilité qu'une condition critique survienne
-* ThreadSanitizer: activer avec l'option de compilation `ENABLE_THREAD_SANITIZER`
-* Valgrind: outil helgrind
-
-Par défaut, on initialise les générateurs de nombres aléatoires avec une constante, de manière à rendre la génération de points déterministe, ce qui aide au débogage.
-
-### Étape 3 : Banc d'essai
-
-Pour les bancs d'essai de cette section, utilisez un nombre de points pour qu'en série, le temps d'exécution de la construction de l'arbre soit d'au plus quelques secondes.
-
-Réaliser un premier banc d'essai pour mesurer le temps d'exécution en fonction du paramètre de profondeur maximale (granularité). Utilisez toujours le nombre maximal de processeurs. Si la profondeur maximale est de 1, alors le code parallèle devient équivalent au code série, peu importe le nombre de processeurs utilisés.
-
-Le fichier de sortie de ce banc d'essai devrait comporter deux colonnes:
-
-* La profondeur maximale
-* Le temps d'exécution
-
-Réaliser un second banc d'essai pour mesurer la mise à l'échelle faible, qui consiste à faire augmenter le nombre de points proportionnellement au nombre de processeurs.
-
-Le fichier de sortie de ce banc d'essai doit contenir (pour chaque ligne):
-
-* le nombre de processeurs
-* le nombre de points total
-* le temps d'exécution de la construction de l'arbre
-* le ratio de points ajoutés dans l'arbre par unité de temps (débit).
-
-### Analyse et rapport
-
-Pour obtenir les données finales de votre rapport, faites rouler votre programme sur la grappe de calcul. Voici un exemple de lancement avec 8 processeurs:
-
-```
-srun --ntasks 8 bench_vptree ...
+```cpp
+int VPTreeParallel::makeNode(int item) {
+  auto it = nodes_.push_back(VPNode(item));
+  return static_cast<int>(std::distance(nodes_.begin(), it));
+}
 ```
 
-À l'aide de ces données, faites deux graphiques
+### Étape 3 - tbb::task_group
 
-* Débit en fonction du nombre de coeurs (mise à l'échelle faible)
-* Temps d'exécution en fonction de la granularité
+On peut maintenant paralléliser la fonction `build` en utilisant `tbb::task_group` pour ajouter les noeuds en parallèle.
+```cpp
+tbb::task_group g;
+g.run([&] {
+    n.left = makeTree(lower + 1, median);
+});
+g.run([&] {
+    n.right = makeTree(median, upper);
+});
+g.wait();
+```
 
-Analyser les résultats. Comment varie le débit de traitement de points en fonction du nombre de processeurs?
+### Étape 4 - granularité
 
-Réalisez un court rapport indiquant un résumé de votre implémentation, votre démarche de vérification, les graphiques obtenus et finalement l'interprétation des résultats.
+Pour finir, on doit controler la granularité de la parallélisation, pour cela on utilise une variable `max_depth` qui limite la profondeur de l'arbre pour la parallélisation.
 
-### Remise
+```cpp
+// vpparallel.h
+void setMaxDepth(int max_depth);
+int m_max_depth = std::numeric_limits<int>::max(); // default
+```
 
- * Faire une archive du code de votre solution avec la commande `make remise` ou `ninja remise`
- * Remise sur TEAMS (code et rapport), une seule remise par équipe
- * Identifiez le ou les codes permanents dans le fichier source `vpparallel.cpp` et le rapport
- * Remettez votre rapport au format PowerPoint ou PDF
- * Code: 70%
- * Rapport: 30%
- * Respect du style: pénalité max 10% (guide de style dans le fichier `.clang-format`)
- * Qualité (fuite mémoire, gestion d'erreur, avertissements, etc): pénalité max 10%
- * Total sur 100
+et on modifie la fonction `makeTree` pour prendre en compte cette limite.
 
-Bon travail !
+```cpp
+// vpparallel.cpp
+if (depth < max_depth) {
+    tbb::task_group g;
+    g.run([&] {
+       n.left = makeTree(lower + 1, median, depth + 1, max_depth);
+    });
+    g.run([&] {
+        n.right = makeTree(median, upper, depth + 1, max_depth);
+    });
+    g.wait();
+} else {
+    n.left = makeTree(lower + 1, median, depth + 1, max_depth);
+    n.right = makeTree(median, upper, depth + 1, max_depth);
+}
+```
 
-# Note sur les logiciels externes
+## Vérification
 
-Le code intègre les librairies et les programmes suivants.
+Avec les tests fournis, on peut vérifier que la parallélisation fonctionne correctement, il suffit d'augmenter le nombre de noeuds pour vérifier aucun problème de concurrence. l'outil `helgrind` nous a permis aussi de voir les `race conditions` et de les corriger.
 
-* https://github.com/pderkowski/vptree
-* https://github.com/catchorg/Catch2
-* https://www.nongnu.org/pngpp
-* https://eigen.tuxfamily.org
+par exemple, on peut tester avec 100000 noeuds, si on parallélise avec task_group, sans faire les les etapes 1 et 2, on obtient l'erreur de la fonction `build` qui n'est pas thread-safe.
+
+```sh
+$ valgrind --tool=helgrind ./build-release/bin/vantagepoint -n 1000 -p 1
+
+==48704== Thread #4 was created
+==48704==    at 0x4CA6A23: clone (clone.S:76)
+==48704==    by 0x4CA6BA2: __clone_internal_fallback (clone-internal.c:64)
+==48704==    by 0x4CA6BA2: __clone_internal (clone-internal.c:109)
+==48704==    by 0x4C1953F: create_thread (pthread_create.c:297)
+==48704==    by 0x4C1A194: pthread_create@@GLIBC_2.34 (pthread_create.c:836)
+==48704==    by 0x4854975: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==48704==    by 0x489CBEC: ??? (in /usr/lib/x86_64-linux-gnu/libtbb.so.12.11)
+==48704==    by 0x48A2C84: ??? (in /usr/lib/x86_64-linux-gnu/libtbb.so.12.11)
+==48704==    by 0x489B5AC: ??? (in /usr/lib/x86_64-linux-gnu/libtbb.so.12.11)
+==48704==    by 0x489EA7F: ??? (in /usr/lib/x86_64-linux-gnu/libtbb.so.12.11)
+==48704==    by 0x1136B0: VPTreeParallel::makeTree(int, int, int, int) (in /home/razer/Documents/INF5171/tp2/inf5171-243-tp2-v2/build-release/bin/vantagepoint)
+==48704==    by 0x113E4D: VPTreeParallel::build() (in /home/razer/Documents/INF5171/tp2/inf5171-243-tp2-v2/build-release/bin/vantagepoint)
+==48704==    by 0x10C0F6: main (in /home/razer/Documents/INF5171/tp2/inf5171-243-tp2-v2/build-release/bin/vantagepoint)
+
+```
+
+En revanche, si on fait les étapes 1 et 2, on n'obitent plus d'erreur de concurrence dans la fonction `build`.
+
+## Graphique
+
+### Benchmarks sur la grappe
+
+![temps d'exécution en fonction de la granularité grappe](graphs/average_execution_time_vs_max_depth-grappe.png)
+
+![debit en fonction du nombre de coeur grappe ](graphs/average_throughput_vs_core_count-grappe.png)
+
+### Benchmarks sur mon ordinateur
+
+![temps d'exécution en fonction de la granularité ordinateur](graphs/average_execution_time_vs_max_depth-laptop.png)
+
+![debit en fonction du nombre de coeur ordinateur](graphs/average_throughput_vs_core_count-laptop.png)
+
+## Analyse Graphe
+
+J'ai effectué plusieurs benchmarks sur la grappe, mais les graphiques obtenus contiennent un peu de "bruit". Les versions des benchmarks réalisées sur un ordinateur donnent une idée plus claire de l'analyse.
+
+### Debit par nombre de coeur
+
+Bien que le graphe présente des fluctuations, on observe que le débit reste relativement stable autour de la moyenne. Par exemple, dans le cas de la grappe, le débit se situe toujours autour de 3,15 M avec une variation de ±0,15 M en fonction du nombre de cœurs. Le même phénomène se remarque sur le graphique de  l'ordinateur, où le débit moyen est d'environ 6 M, avec une variation de ±1 M.
+
+Un débit stable est un indicateur d’une bonne parallélisation.
+
+### Temps par granularite
+
+On observe ici une réduction agressive du temps d'exécution dès que l'on "ouvre" le parallélisme en augmentant le `max_depth`, mais cette réduction atteint un plafond à partir d’une certaine profondeur. Au-delà de cette valeur, le temps commence même à augmenter avec une granularité très fine, car le surcoût de gestion des tâches devient significatif. Cette tendance est visible dans les deux graphiques.
+
+## Commande utilisées
+
+### Compilation
+
+```sh
+./build/Desktop-Release/bin/bench_vptree 
+cmake -G Ninja -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build build-release
+```
+
+### Grappe
+
+```sh
+srun -c 8 ./build-release/bin/bench_vptree 
+scp username@inf5171.calculquebec.cloud:weak_scale.dat .
+```
+
+### Helgrind
+
+```sh
+valgrind --tool=helgrind ./build-release/bin/vantagepoint -n 1000 -p 1
+```
+
+### Graphique
+
+```sh
+pip install pandas
+pip install matplotlib
+python3 plot.py
+```
+
+### Nettoyage
+
+ce nettyoage n'est pas requis, car le script python utilise la moyenne des lignes dupliquées dans les fichier `.dat` pour les graphiques.
+
+```sh
+awk '!seen[$1]++' granularite.dat > granularite.dat
+```
